@@ -12,16 +12,19 @@ jobs:
         with:
           fetch-depth: 0
           lfs: true
+
+      - name: Install Hugging Face CLI
+        run: pip install -U "huggingface_hub[cli]"
+
       - name: Push to Hub
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          # 1. Clear any existing remotes to avoid "already exists" errors
-          git remote rm hf || true
+          # 1. Login using the token
+          huggingface-cli login --token $HF_TOKEN --add-to-git-credential
           
-          # 2. Add the remote with the token embedded directly in the URL
-          # Use 'HF_TOKEN' as the username and the token as the password
-          git remote add hf https://SS9424:$HF_TOKEN@huggingface.co/spaces/SS9424/data-cleaning-openenv
+          # 2. Add the remote (standard URL without token embedded)
+          git remote add hf https://huggingface.co/spaces/SS9424/data-cleaning-openenv || true
           
-          # 3. Push
+          # 3. Push using the credentials stored by the CLI
           git push --force hf main
