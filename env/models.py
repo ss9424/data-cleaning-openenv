@@ -18,6 +18,13 @@ class Observation(BaseModel):
     column_stats: dict[str, dict] = Field(
         description="Statistical summary (min, max, unique values) for each column."
     )
+    
+    # --- REQUIRED OPENENV SERVER FIELDS ---
+    reward: float = Field(default=0.0, description="Overall reward for this step (0.0 to 1.0)")
+    done: bool = Field(default=False, description="True if the episode is over")
+    error: Optional[str] = Field(default=None, description="Error message if the action failed")
+
+# ... Keep your existing Action and Reward classes down here ...
 
 class Action(BaseModel):
     """What the agent sends to the environment to perform a cleaning operation."""
