@@ -46,9 +46,6 @@ def generate_medium_task(n=300):
     np.random.seed(42)
     product_ids = list(range(1001, 1001 + n))
 
-    # BUG FIX 5: Save ground truth category as int8 to match what
-    # pandas .astype('category').cat.codes produces, so dtype comparison in
-    # reward.py gets full credit instead of falling back to the numeric fallback.
     categories_clean = np.random.choice([0, 1, 2], size=n)
     prices_clean = np.round(np.random.uniform(10.0, 999.99, size=n), 2)
 
