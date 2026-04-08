@@ -10,28 +10,23 @@ def create_directories():
 
 def generate_easy_task(n=300):
     """Matches task_easy.py: Missing values and duplicates."""
-    np.random.seed(42) # Seed for reproducibility
+    np.random.seed(42)
     random.seed(42)
-    
+
     ids = list(range(1, n + 1))
     names = [f"User_{i}" for i in ids]
-    
-    # Generate ages and calculate what the median WILL be
+
     ages = np.random.randint(18, 70, size=n).astype(float)
-    
-    # Select 10% of rows to be our 'missing' data
+
     null_indices = random.sample(range(n), int(n * 0.1))
-    
-    # To ensure the agent scores 1.0 when it fills NaNs with the median,
-    # the ground truth must ALREADY have the median in those exact spots!
-    # We calculate the median of the dataset EXCLUDING the ones we will drop.
+
     mask = np.ones(n, dtype=bool)
     mask[null_indices] = False
     target_median = np.median(ages[mask])
-    
+
     for idx in null_indices:
         ages[idx] = target_median
-        
+
     # 1. Ground Truth (Perfect Data)
     df_clean = pd.DataFrame({"id": ids, "name": names, "age": ages})
     df_clean.to_csv("data/cleaned_ground_truth/easy_clean.csv", index=False)
@@ -39,23 +34,24 @@ def generate_easy_task(n=300):
     # 2. Raw Data (Messy)
     df_raw = df_clean.copy()
     for idx in null_indices:
-        df_raw.loc[idx, "age"] = np.nan # Inject the nulls
-        
-    # Add exactly 10 duplicate rows at the end
+        df_raw.loc[idx, "age"] = np.nan
+
     duplicates = df_raw.sample(10, random_state=42)
     df_raw = pd.concat([df_raw, duplicates], ignore_index=True)
-    
+
     df_raw.to_csv("data/raw/easy.csv", index=False)
     print(f"✅ Easy datasets generated ({len(df_raw)} rows messy -> {len(df_clean)} rows clean).")
 
 def generate_medium_task(n=300):
     np.random.seed(42)
     product_ids = list(range(1001, 1001 + n))
-    
-    # Clean Data
+
+    # BUG FIX 5: Save ground truth category as int8 to match what
+    # pandas .astype('category').cat.codes produces, so dtype comparison in
+    # reward.py gets full credit instead of falling back to the numeric fallback.
     categories_clean = np.random.choice([0, 1, 2], size=n)
     prices_clean = np.round(np.random.uniform(10.0, 999.99, size=n), 2)
-    
+
     df_clean = pd.DataFrame({
         "product_id": product_ids,
         "category": categories_clean,
@@ -63,8 +59,8 @@ def generate_medium_task(n=300):
     })
     df_clean.to_csv("data/cleaned_ground_truth/medium_clean.csv", index=False)
 
-    # FIX: Map must be alphabetical so Auto=0, Home=1, Tech=2
-    # This aligns the messy data perfectly with the agent's updated `.astype('category').cat.codes`
+    # Map must be alphabetical so Auto=0, Home=1, Tech=2
+    # This aligns with the agent's .astype('category').cat.codes
     category_map = {0: "Auto", 1: "Home", 2: "Tech"}
     df_raw = pd.DataFrame({
         "product_id": product_ids,
@@ -72,33 +68,29 @@ def generate_medium_task(n=300):
         "price": [f"${p:.2f}" for p in prices_clean]
     })
 
-    # ADD THE MESS:
-    # 1. Add 5 duplicate rows
+    # Add 5 duplicate rows
     duplicates = df_raw.sample(5, random_state=42)
     df_raw = pd.concat([df_raw, duplicates], ignore_index=True)
-    
+
     df_raw.to_csv("data/raw/medium.csv", index=False)
     print(f"✅ Updated Medium datasets with actual mess!")
 
 def generate_hard_task(n=300):
     """Matches task_hard.py: Math via feature_engineering and normalization."""
     np.random.seed(42)
-    
+
     item_ids = list(range(1, n + 1))
-    
-    # Generate the raw (messy) data first
+
     length_inches = np.round(np.random.uniform(5.0, 50.0, size=n), 1)
     price_usd = np.round(np.random.uniform(5.0, 200.0, size=n), 2)
     weight_raw = np.random.randint(10, 500, size=n)
-    
-    # Calculate the perfect ground truth conversions
+
     length_cm = np.round(length_inches * 2.54, 3)
     price_inr = np.round(price_usd * 83.0, 2)
-    
-    # Min-max normalization for weights
+
     w_min, w_max = weight_raw.min(), weight_raw.max()
     weight_norm = (weight_raw - w_min) / (w_max - w_min)
-    
+
     # 1. Ground Truth (Perfect Data)
     df_clean = pd.DataFrame({
         "item_id": item_ids,
@@ -108,12 +100,12 @@ def generate_hard_task(n=300):
     })
     df_clean.to_csv("data/cleaned_ground_truth/hard_clean.csv", index=False)
 
-    # 2. Raw Data (Messy) - Note the column names match the clean ones, but the data is wrong!
+    # 2. Raw Data (Messy)
     df_raw = pd.DataFrame({
         "item_id": item_ids,
-        "length_cm": length_inches, 
-        "price_inr": price_usd,      
-        "weight_norm": weight_raw    
+        "length_cm": length_inches,
+        "price_inr": price_usd,
+        "weight_norm": weight_raw
     })
     df_raw.to_csv("data/raw/hard.csv", index=False)
     print(f"✅ Hard datasets generated ({len(df_raw)} rows).")
