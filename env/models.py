@@ -1,93 +1,41 @@
-from env.state_manager import StateManager
+from typing import Optional, List, Literal
+from pydantic import BaseModel, Field
 
-class DataCleaningEnv:
-    def __init__(self, csv_path: str, ground_truth_path: str, max_steps: int):
-        self.state_manager = StateManager(csv_path)
-        self.reward_calculator = RewardCalculator(ground_truth_path)
-        self.max_steps = max_steps
-        self.current_step = 0
-        self._current_state = None
+class Observation(BaseModel):
+    """What the environment sends to the agent after every step."""
+    sample_rows: List[dict] = Field(description="First 5 rows of the dataset as a preview.")
+    columns: List[str] = Field(description="List of column names in the dataset")
+    step: int = Field(description="How many steps have been taken in this episode so far")
+    message: str = Field(description="Human-readable description of what just happened")
+    cleaning_history: List[str] = Field(
+        default_factory=list, 
+        description="A log of all successful cleaning operations performed so far."
+    )
+    total_rows: int = Field(description="Total number of rows in the current dataset")
+    total_columns: int = Field(description="Total number of columns in the current dataset")
+    null_counts: dict[str, int] = Field(description="Number of null values per column")
+    dtype_map: dict[str, str] = Field(description="Current data type of each column")
+    column_stats: dict[str, dict] = Field(
+        description="Statistical summary (min, max, unique values) for each column."
+    )
+    # Required OpenEnv Server Fields
+    reward: float = Field(default=0.0, description="Overall reward for this step (0.0 to 1.0)")
+    done: bool = Field(default=False, description="True if the episode is over")
+    error: Optional[str] = Field(default=None, description="Error message if the action failed")
 
-    def reset(self) -> Observation:
-        """Resets the environment and returns the initial observation."""
-        self.state_manager.reset()
-        self.current_step = 0
-        state_dict = self.state_manager.get_state_summary()
-        
-        self._current_state = Observation(
-            sample_rows=state_dict["sample_rows"],
-            columns=state_dict["columns"],
-            step=self.current_step,
-            message="Environment reset. Initializing task...",
-            cleaning_history=state_dict["cleaning_history"],
-            total_rows=state_dict["total_rows"],
-            total_columns=state_dict["total_columns"],
-            null_counts=state_dict["null_counts"],
-            dtype_map=state_dict["dtype_map"],
-            column_stats=state_dict["column_stats"],
-            # 👇 Inject defaults for OpenEnv Server Schema
-            reward=0.0,
-            done=False,
-            error=None
-        )
-        return self._current_state
+class Action(BaseModel):
+    """What the agent sends to the environment to perform a cleaning operation."""
+    operation: Literal[
+        'fill_na', 'drop_na', 'drop_column', 'rename_column', 'normalize', 
+        'encode', 'fix_type', 'remove_units', 'drop_duplicates', 
+        'feature_engineering', 'filter_rows'
+    ] = Field(description="The exact cleaning operation to perform.")
+    column: Optional[str] = Field(default=None, description="The column to operate on.")
+    value: Optional[str] = Field(default=None, description="Extra parameter (fill value, dtype, etc).")
 
-    def state(self) -> Observation:
-        """Returns the current state of the environment."""
-        if self._current_state is None:
-            return self.reset()
-        return self._current_state
-
-    def step(self, action: Action) -> tuple[Observation, float, bool, dict]:
-        """Applies an action and returns (observation, reward, done, info)."""
-        self.current_step += 1
-        
-        # Apply the action
-        error_msg = None
-        try:
-            message = self.state_manager.apply_action(action.operation, action.column, action.value)
-        except Exception as e:
-            message = f"Action failed: {str(e)}"
-            error_msg = str(e)
-        
-        # 👇 Calculate reward FIRST so we can bundle it into the Observation
-        reward_obj = self.reward_calculator.calculate(self.state_manager.df, self.current_step, self.max_steps)
-        
-        # Get updated state
-        state_dict = self.state_manager.get_state_summary()
-        
-        obs = Observation(
-            sample_rows=state_dict["sample_rows"],
-            columns=state_dict["columns"],
-            step=self.current_step,
-            message=message,
-            cleaning_history=state_dict["cleaning_history"],
-            total_rows=state_dict["total_rows"],
-            total_columns=state_dict["total_columns"],
-            null_counts=state_dict["null_counts"],
-            dtype_map=state_dict["dtype_map"],
-            column_stats=state_dict["column_stats"],
-            # 👇 Inject the calculated values here!
-            reward=reward_obj.score,
-            done=reward_obj.done,
-            error=error_msg
-        )
-        self._current_state = obs
-        
-        # Extract the required OpenEnv tuple elements for local scripts
-        reward = reward_obj.score
-        done = reward_obj.done
-        info = {
-            "reason": reward_obj.reason,
-            "breakdown": reward_obj.breakdown
-        }
-        
-        return obs, reward, done, info
-        
-    def close(self):
-        """Dummy close method to satisfy OpenEnv server expectations."""
-        pass
-
-    async def reset_async(self):
-        """Wrapper to handle async reset calls from the FastAPI server."""
-        return self.reset()
+class Reward(BaseModel):
+    """What the environment returns to tell the agent how well it is doing."""
+    score: float = Field(description="Overall reward for this step (0.0 to 1.0)")
+    breakdown: dict[str, float] = Field(description="Score broken down by cleaning dimension")
+    reason: str = Field(description="Human-readable explanation of the score")
+    done: bool = Field(description="True if the episode is over")
