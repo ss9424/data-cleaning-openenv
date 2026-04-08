@@ -16,4 +16,4 @@ COPY . .
 # Generate the datasets at build time
 RUN python generate_data.py
 
-CMD ["python", "inference.py"]
+CMD ["openenv", "serve", "--host", "0.0.0.0", "--port", "7860"]
