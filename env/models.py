@@ -1,5 +1,4 @@
 from env.state_manager import StateManager
-from env.reward import RewardCalculator
 from env.models import Observation, Action
 
 class DataCleaningEnv:
