@@ -16,4 +16,5 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          git push --force https://SS9424:$HF_TOKEN@huggingface.co/spaces/SS9424/data-cleaning-openenv main
+          # We use the token as the 'password' and 'user' as a placeholder
+          git push --force https://user:$HF_TOKEN@huggingface.co/spaces/SS9424/data-cleaning-openenv main
