@@ -154,7 +154,7 @@ docker run --env-file .env data-cleaning-env
 ---
 
 ## Project Structure
-
+```
 data-cleaning-env/
 ├── data/
 │   ├── raw/                  # Messy input CSVs (auto-generated)
@@ -173,7 +173,7 @@ data-cleaning-env/
 ├── openenv.yaml              # OpenEnv metadata
 ├── requirements.txt
 └── Dockerfile
-
+```
 ---
 
 ## Tags
