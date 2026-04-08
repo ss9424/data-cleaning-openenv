@@ -26,7 +26,10 @@ class DataCleaningEnv:
             total_columns=state_dict["total_columns"],
             null_counts=state_dict["null_counts"],
             dtype_map=state_dict["dtype_map"],
-            column_stats=state_dict["column_stats"]
+            column_stats=state_dict["column_stats"],
+            reward=0.0,
+            done=False,
+            error=None
         )
         return self._current_state
 
@@ -40,11 +43,16 @@ class DataCleaningEnv:
         """Applies an action and returns (observation, reward, done, info)."""
         self.current_step += 1
         
-        # Apply the action
-        message = self.state_manager.apply_action(action.operation, action.column, action.value)
+        error_msg = None
+        try:
+            message = self.state_manager.apply_action(action.operation, action.column, action.value)
+        except Exception as e:
+            message = f"Action failed: {str(e)}"
+            error_msg = str(e)
         
-        # Get updated state
+        reward_obj = self.reward_calculator.calculate(self.state_manager.df, self.current_step, self.max_steps)
         state_dict = self.state_manager.get_state_summary()
+        
         obs = Observation(
             sample_rows=state_dict["sample_rows"],
             columns=state_dict["columns"],
@@ -55,14 +63,13 @@ class DataCleaningEnv:
             total_columns=state_dict["total_columns"],
             null_counts=state_dict["null_counts"],
             dtype_map=state_dict["dtype_map"],
-            column_stats=state_dict["column_stats"]
+            column_stats=state_dict["column_stats"],
+            reward=reward_obj.score,
+            done=reward_obj.done,
+            error=error_msg
         )
         self._current_state = obs
         
-        # Calculate reward
-        reward_obj = self.reward_calculator.calculate(self.state_manager.df, self.current_step, self.max_steps)
-        
-        # Extract the required OpenEnv tuple elements
         reward = reward_obj.score
         done = reward_obj.done
         info = {
