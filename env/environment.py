@@ -86,3 +86,7 @@ class DataCleaningEnv:
     async def reset_async(self):
         """Wrapper to handle async reset calls from the FastAPI server."""
         return self.reset()
+
+    async def step_async(self, action: Action):
+        """Wrapper to handle async step calls from the FastAPI server."""
+        return self.step(action)
