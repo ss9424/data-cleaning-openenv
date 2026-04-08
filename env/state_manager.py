@@ -19,7 +19,7 @@ class StateManager:
     def get_state_summary(self) -> dict:
         """Extracts a smart, token-efficient summary of the dataframe."""
         clean_df = self.df.replace({np.nan: None})
-        
+
         stats = {}
         for col in self.df.columns:
             col_stats = {"unique_count": self.df[col].nunique()}
@@ -42,13 +42,13 @@ class StateManager:
     def apply_action(self, operation: str, column: str = None, value: str = None) -> str:
         try:
             msg = ""
-            
+
             # --- Global operations that don't strictly require a target column ---
             if operation == 'drop_duplicates':
                 before = len(self.df)
                 self.df = self.df.drop_duplicates().reset_index(drop=True)
                 msg = f"Dropped {before - len(self.df)} duplicate rows."
-                
+
             elif operation == 'drop_na':
                 before = len(self.df)
                 if column and column in self.df.columns:
@@ -59,11 +59,17 @@ class StateManager:
                     msg = f"Dropped {before - len(self.df)} rows with NaNs."
 
             elif operation == 'filter_rows':
+                # BUG FIX 1: Guard against None value before calling df.query()
+                if not value:
+                    return "Error: 'filter_rows' requires a query string in 'value'."
                 before = len(self.df)
                 self.df = self.df.query(value).reset_index(drop=True)
                 msg = f"Filtered rows. Dropped {before - len(self.df)} rows."
 
             elif operation == 'feature_engineering':
+                # BUG FIX 1: Guard against None value/column before calling df.eval()
+                if not value or not column:
+                    return "Error: 'feature_engineering' requires both 'column' and 'value' (expression)."
                 self.df[column] = self.df.eval(value)
                 msg = f"Calculated {value} for {column}."
 
@@ -78,15 +84,20 @@ class StateManager:
 
                 elif operation == 'fix_type':
                     if value == 'float':
-                        # Fixed regex to safely keep decimals and negatives
-                        self.df[column] = pd.to_numeric(self.df[column].astype(str).str.replace('[^0-9.-]', '', regex=True), errors='coerce')
+                        self.df[column] = pd.to_numeric(
+                            self.df[column].astype(str).str.replace('[^0-9.-]', '', regex=True),
+                            errors='coerce'
+                        )
+                        msg = f"Cast '{column}' to float."
                     elif value == 'int':
-                        self.df[column] = pd.to_numeric(self.df[column], errors='coerce').fillna(0).astype(int)
-                    msg = f"Cast '{column}' to {value}."
+                        # BUG FIX 2: Use nullable Int64 instead of filling NaNs with 0
+                        self.df[column] = pd.to_numeric(self.df[column], errors='coerce').astype('Int64')
+                        msg = f"Cast '{column}' to int."
+                    else:
+                        # BUG FIX 3: Return error for unrecognized type instead of silent no-op
+                        return f"Error: Unrecognized type '{value}' for fix_type. Use 'int' or 'float'."
 
                 elif operation == 'encode':
-                    # FIX: Use category codes to enforce alphabetical sorting. 
-                    # This standardizes the integer mapping (e.g., Auto=0, Home=1, Tech=2).
                     self.df[column] = self.df[column].astype('category').cat.codes
                     msg = f"Label-encoded '{column}'."
 
@@ -97,7 +108,7 @@ class StateManager:
                         msg = f"Normalized {column}."
                     else:
                         return "Error: Min and Max are equal, cannot normalize."
-                
+
                 elif operation == 'fill_na':
                     if value == 'median':
                         fill_val = self.df[column].median()
@@ -119,10 +130,9 @@ class StateManager:
                     msg = f"Renamed column '{column}' to '{value}'."
 
             if msg:
-                # Log successful action
                 self.applied_actions.append(f"{operation} on {column}" if column else operation)
                 return msg
-            
+
             return "Operation completed with no changes or unrecognized operation."
 
         except Exception as e:
