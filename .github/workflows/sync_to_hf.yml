@@ -16,5 +16,11 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          # We use the token as the 'password' and 'user' as a placeholder
-          git push --force https://user:$HF_TOKEN@huggingface.co/spaces/SS9424/data-cleaning-openenv main
+          # 1. Add Hugging Face as a remote
+          git remote add hf https://huggingface.co/spaces/SS9424/data-cleaning-openenv
+          
+          # 2. Configure Git to use the token in the Authorization header
+          git config --global http.https://huggingface.co/.extraheader "AUTHORIZATION: bearer $HF_TOKEN"
+          
+          # 3. Push to the 'main' branch of the 'hf' remote
+          git push --force hf main
