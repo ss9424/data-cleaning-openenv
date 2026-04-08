@@ -1,3 +1,11 @@
+---
+title: Data Cleaning OpenEnv
+emoji: 🧹
+colorFrom: blue
+colorTo: green
+sdk: docker
+pinned: false
+---
 # Data Cleaning Env (OpenEnv Hackathon)
 
 This environment simulates a real-world data science task: Data Cleaning and Preprocessing.
