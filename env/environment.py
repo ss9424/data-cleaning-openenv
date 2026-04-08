@@ -71,3 +71,11 @@ class DataCleaningEnv:
         }
         
         return obs, reward, done, info
+        
+    def close(self):
+        """Dummy close method to satisfy OpenEnv server expectations."""
+        pass
+
+    async def reset_async(self):
+        """Wrapper to handle async reset calls from the FastAPI server."""
+        return self.reset()
