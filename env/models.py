@@ -1,5 +1,4 @@
 from env.state_manager import StateManager
-from env.models import Observation, Action
 
 class DataCleaningEnv:
     def __init__(self, csv_path: str, ground_truth_path: str, max_steps: int):
