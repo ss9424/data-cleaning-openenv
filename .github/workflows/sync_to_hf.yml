@@ -17,11 +17,17 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          # 1. Configure Git to use the token in the header for all HF requests
-          git config --global http.https://huggingface.co/.extraheader "AUTHORIZATION: bearer $HF_TOKEN"
+          # 1. Check if the token exists (this will print 'Token is set' or 'Token is EMPTY')
+          if [ -z "$HF_TOKEN" ]; then
+            echo "Token is EMPTY. Please check your GitHub Secrets!"
+            exit 1
+          else
+            echo "Token is set, proceeding..."
+          fi
+
+          # 2. Add the remote with the token explicitly as the username
+          # This format 'https://token:hf_xxx@...' is the most reliable for HF
+          git remote add hf https://token:$HF_TOKEN@huggingface.co/spaces/SS9424/data-cleaning-openenv || true
           
-          # 2. Add the remote using the standard HTTPS link
-          git remote add hf https://huggingface.co/spaces/SS9424/data-cleaning-openenv || true
-          
-          # 3. Push to the main branch
+          # 3. Force push
           git push --force hf main
