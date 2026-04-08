@@ -16,11 +16,12 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          # 1. Add Hugging Face as a remote
-          git remote add hf https://huggingface.co/spaces/SS9424/data-cleaning-openenv
+          # 1. Clear any existing remotes to avoid "already exists" errors
+          git remote rm hf || true
           
-          # 2. Configure Git to use the token in the Authorization header
-          git config --global http.https://huggingface.co/.extraheader "AUTHORIZATION: bearer $HF_TOKEN"
+          # 2. Add the remote with the token embedded directly in the URL
+          # Use 'HF_TOKEN' as the username and the token as the password
+          git remote add hf https://SS9424:$HF_TOKEN@huggingface.co/spaces/SS9424/data-cleaning-openenv
           
-          # 3. Push to the 'main' branch of the 'hf' remote
+          # 3. Push
           git push --force hf main
