@@ -1,7 +1,7 @@
 pandas
 numpy
 pydantic
-openai
 openenv-core
 python-dotenv
 uvicorn
+fastapi
