@@ -24,9 +24,9 @@ dev = [
 
 [project.scripts]
 # Enables: uv run --project . server
-server = "data_cleaning.server.app:main"
+server = "server.app:main"
 
 [tool.setuptools]
 include-package-data = true
-packages = ["data_cleaning", "data_cleaning.server"]
-package-dir = { "data_cleaning" = ".", "data_cleaning.server" = "server" }
+packages = ["server"]
+package-dir = { "server" = "server" }
