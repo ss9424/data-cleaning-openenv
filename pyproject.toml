@@ -1,19 +1,32 @@
 [build-system]
-requires = ["setuptools>=61.0"]
+requires = ["setuptools>=45", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "data-cleaning-env"
-version = "1.0.0"
-description = "A real-world OpenEnv simulation for data cleaning."
-readme = "README.md"
+name = "openenv-data-cleaning"
+version = "0.1.0"
+description = "Data Cleaning environment for OpenEnv"
 requires-python = ">=3.10"
 dependencies = [
-    "pandas",
-    "numpy",
-    "pydantic",
-    "openai",
-    "openenv-core",
-    "python-dotenv",
-    "uvicorn"
+    "openenv-core>=0.2.2",
+    "pandas>=2.0.0",
+    "numpy>=1.24.0",
+    "pydantic>=2.0.0",
+    "uvicorn>=0.20.0",
+    "fastapi>=0.100.0",
+    "python-dotenv>=1.0.0",
 ]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+]
+
+[project.scripts]
+# Enables: uv run --project . server
+server = "data_cleaning.server.app:main"
+
+[tool.setuptools]
+include-package-data = true
+packages = ["data_cleaning", "data_cleaning.server"]
+package-dir = { "data_cleaning" = ".", "data_cleaning.server" = "server" }
