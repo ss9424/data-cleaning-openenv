@@ -1,7 +1,10 @@
-version: "1.0"
-name: "data-cleaning-env"
+spec_version: 1
+name: data-cleaning-env
+type: space
+runtime: fastapi
+app: server.app:app
+port: 7860
 description: "A real-world OpenEnv simulation for data cleaning. Agents must resolve missing values, format currencies, normalize distributions, and drop duplicates to match a ground-truth dataset."
-entrypoint: "inference.py"
 tasks:
   - id: "easy"
     description: "Fill missing values with medians and drop duplicates."
